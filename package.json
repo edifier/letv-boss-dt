@@ -1,0 +1,65 @@
+{
+  "name": "letv-boss-dt",
+  "version": "0.4.7",
+  "description": "letv boss team development tools",
+  "main": "index.js",
+  "bin": {
+    "bsp": "./bin/cmd.js"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "browserify": "^11.2.0",
+    "clean-css": "^3.4.6",
+    "colors": "^1.1.2",
+    "iconv-lite": "^0.4.13",
+    "imagemin": "^3.2.2",
+    "uglify-js": "^2.4.24",
+    "cross-spawn": "latest",
+    "ssh2": "latest",
+    "watch": "^0.16.0"
+  },
+  "scripts": {
+    "test": "node ./test/test.js"
+  },
+  "keywords": [
+    "iconv-lite",
+    "watch",
+    "uglifyjs",
+    "colors",
+    "browserify"
+  ],
+  "author": {
+    "name": "edifier"
+  },
+  "license": "ISC",
+  "_id": "letv-boss-dt@0.4.7",
+  "_shasum": "9ba8b5fa4c10f251afba459360fc10cb163d0fcc",
+  "_from": "letv-boss-dt@0.4.7",
+  "_npmVersion": "3.3.6",
+  "_nodeVersion": "4.1.0",
+  "_npmUser": {
+    "name": "edifier88216",
+    "email": "edifier1988216@163.com"
+  },
+  "dist": {
+    "shasum": "9ba8b5fa4c10f251afba459360fc10cb163d0fcc",
+    "size": 105425,
+    "noattachment": false,
+    "tarball": "http://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.4.7.tgz"
+  },
+  "maintainers": [
+    {
+      "name": "edifier88216",
+      "email": "edifier1988216@163.com"
+    }
+  ],
+  "_npmOperationalInternal": {
+    "host": "packages-12-west.internal.npmjs.com",
+    "tmp": "tmp/letv-boss-dt-0.4.7.tgz_1465011970597_0.36703712749294937"
+  },
+  "publish_time": 1465011971165,
+  "_cnpm_publish_time": 1465011971165,
+  "_resolved": "https://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.4.7.tgz"
+}
