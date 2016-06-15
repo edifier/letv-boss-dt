@@ -226,7 +226,7 @@ module.exports = function (config) {
                             }
                             break;
                         case 'css':
-                            if (!type) {
+                            if (type == 'change') {
                                 doMinify(getArgs(file, cssMap, type), opts, 'css');
                                 trace.log(file[0] + ' has been changed at ' + new Date());
                             } else if (type == 'removed' || type == 'built') {
@@ -236,8 +236,8 @@ module.exports = function (config) {
                             next();
                             break;
                         case 'js':
-                            if (!type) {
-                                doMinify(getArgs(file), opts, 'js');
+                            if (type == 'change') {
+                                doMinify(getArgs(file, {}, type), opts, 'js');
                                 trace.log(file[0] + ' has been changed at ' + new Date());
                             } else if (type == 'removed' || type == 'built') {
                                 jsMap = getArgs(file, jsMap, type);
@@ -246,7 +246,7 @@ module.exports = function (config) {
                             next();
                             break;
                         case 'scss':
-                            if (!type) {
+                            if (type == 'change') {
                                 doMinify(getArgs(file, scssMap, type), opts, 'scss');
                                 trace.log(file[0] + ' has been changed at ' + new Date());
                             } else if (type == 'remove' || type == 'built') {
