@@ -31,7 +31,7 @@ function getArgs(file) {
     if (len == 0) return o;
     for (; i < len; i++) {
         var path = PATH.resolve(file[i]);
-        if (type == 'built' || type == 'change') {
+        if (!type || type == 'built' || type == 'change') {
             !o[path] && (o[path] = file[i]);
         } else if (type === 'removed') {
             delete o[path];
@@ -40,6 +40,25 @@ function getArgs(file) {
     return o;
 }
 
+/*
+ * @author wangxin
+ * 获取一个mod文件父文件夹下的RJS文件
+ * return arr ['dirPath','dirPath',...]
+ */
+function getRJSFiles(files) {
+    if (files.length == 0) return [];
+
+    var arr = [],
+        rjsDirectory = files[0].replace(/mod[\/\\].+$/g, ''),
+        rjsFiles = fs.readdirSync(rjsDirectory);
+
+    rjsFiles.forEach(function (fileName) {
+        var file = rjsDirectory + fileName;
+        util.testRJS(file) && arr.push(file);
+    });
+
+    return arr;
+}
 
 /*
  * @author wangxin
@@ -200,17 +219,20 @@ module.exports = function (config) {
 
                     switch (extname) {
                         case 'rjs':
-                            if (!type || type == 'change' || type == 'built') {
-                                walk(type ? getArgs(file, {}, type) : rjsMap, libraryMap, opts, function () {
+                            if (type == 'change' || type == 'built') {
+                                walk(getArgs(file, {}, type), libraryMap, opts, function () {
                                     if (type == 'built') {
                                         util.log(file, type);
-                                    } else if (!type) {
-                                        trace.log('mod file: ' + file + ' has been changed at ' + new Date());
                                     } else {
                                         trace.log(file[0] + ' has been changed at ' + new Date());
                                     }
                                     next();
                                 });
+                            } else if (!type) {
+                                walk(getArgs(getRJSFiles(file), {}, type), libraryMap, opts, function () {
+                                    trace.log('mod file: ' + file + ' has been changed at ' + new Date());
+                                });
+                                next();
                             } else if (type == 'removed') {
                                 rjsMap = getArgs(file, rjsMap, type);
                                 util.log(file, type);

@@ -34,9 +34,9 @@
     "name": "edifier"
   },
   "license": "ISC",
-  "_id": "letv-boss-dt@0.4.7",
-  "_shasum": "9ba8b5fa4c10f251afba459360fc10cb163d0fcc",
-  "_from": "letv-boss-dt@0.4.7",
+  "_id": "letv-boss-dt@0.5.2",
+  "_shasum": "dbd2c19bda4fd1621733c38708f60be7daa6fb94",
+  "_from": "letv-boss-dt@0.5.2",
   "_npmVersion": "3.3.6",
   "_nodeVersion": "4.1.0",
   "_npmUser": {
@@ -44,10 +44,10 @@
     "email": "edifier1988216@163.com"
   },
   "dist": {
-    "shasum": "9ba8b5fa4c10f251afba459360fc10cb163d0fcc",
-    "size": 105425,
+    "shasum": "dbd2c19bda4fd1621733c38708f60be7daa6fb94",
+    "size": 99045,
     "noattachment": false,
-    "tarball": "http://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.4.7.tgz"
+    "tarball": "http://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.5.2.tgz"
   },
   "maintainers": [
     {
@@ -56,10 +56,11 @@
     }
   ],
   "_npmOperationalInternal": {
-    "host": "packages-12-west.internal.npmjs.com",
-    "tmp": "tmp/letv-boss-dt-0.4.7.tgz_1465011970597_0.36703712749294937"
+    "host": "packages-16-east.internal.npmjs.com",
+    "tmp": "tmp/letv-boss-dt-0.5.2.tgz_1467724790959_0.11321217473596334"
   },
-  "publish_time": 1465011971165,
-  "_cnpm_publish_time": 1465011971165,
-  "_resolved": "https://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.4.7.tgz"
+  "publish_time": 1467724794802,
+  "_cnpm_publish_time": 1467724794802,
+  "_resolved": "https://registry.npm.taobao.org/letv-boss-dt/download/letv-boss-dt-0.5.2.tgz",
+  "gitHead": "70a7202900e1882b1f6b83144ed2ae4c723e68c3"
 }
