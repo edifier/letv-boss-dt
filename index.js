@@ -233,6 +233,9 @@ module.exports = function (config) {
                                     trace.log('mod file: ' + file + ' has been changed at ' + new Date());
                                 });
                                 next();
+                            } else if (type == 'libFile') {
+                                walk(rjsMap, libraryMap, opts);
+                                next();
                             } else if (type == 'removed') {
                                 rjsMap = getArgs(file, rjsMap, type);
                                 util.log(file, type);
