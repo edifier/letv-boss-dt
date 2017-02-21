@@ -83,7 +83,7 @@ const getLibraryMap = (fileDir = '', arr = []) => {
  * outputPath: 输出文件路径
  * return;
  */
-const doBrowserify = (basePath = '', libraryMap, config, index, cb) => {
+const doBrowserify = (basePath, libraryMap, config, index, cb) => {
     let b = new browserify({
         entries: basePath,
         paths: libraryMap,
@@ -114,7 +114,7 @@ const doBrowserify = (basePath = '', libraryMap, config, index, cb) => {
  * libraryMap: 库文件map对象
  * return false;
  */
-const walk = (rjsMap = {}, libraryMap, opt, cb) => {
+const walk = (rjsMap, libraryMap, opt, cb) => {
 
     let arr = [], go = (i) => {
         if (arr[i]) {
