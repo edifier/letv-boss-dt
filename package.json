@@ -18,10 +18,12 @@
     "uglify-js": "^2.4.24",
     "cross-spawn": "latest",
     "ssh2": "latest",
-    "watch": "^0.16.0"
+    "watch": "^0.16.0",
+	"babel-core": "6.13.2",
+	"babel-preset-es2015":"^6.22.0"
   },
   "scripts": {
-    "test": "node ./test/test.js"
+    "test": "node ./bin/cmd.js"
   },
   "keywords": [
     "iconv-lite",

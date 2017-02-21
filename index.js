@@ -3,19 +3,18 @@
  */
 
 'use strict';
+const fs = require('fs');
+const PATH = require('path');
+const iconv = require('iconv-lite');
 
-var fs = require('fs');
-var PATH = require('path');
-var iconv = require('iconv-lite');
+const browserify = require('browserify');
+const Imagemin = require('imagemin');
 
-var browserify = require('browserify');
-var Imagemin = require('imagemin');
-
-var distrbute = require('./lib/distrbute');
-var trace = require('./lib/trace');
-var outputHandle = require('./lib/output');
-var listener = require('./lib/listener');
-var util = require('./lib/util');
+const distrbute = require('./lib/distrbute');
+const trace = require('./lib/trace');
+const outputHandle = require('./lib/output');
+const listener = require('./lib/listener');
+const util = require('./lib/util');
 
 /*
  * @author wangxin
@@ -23,10 +22,8 @@ var util = require('./lib/util');
  * file: 文件路径
  * return object;
  */
-function getArgs(file) {
-    var o = arguments[1] || {},
-        type = arguments[2] || null,
-        i = 0, len = file.length;
+const getArgs = (file = [], o = {}, type = '') => {
+    let i = 0, len = file.length;
 
     if (len == 0) return o;
     for (; i < len; i++) {
@@ -38,46 +35,46 @@ function getArgs(file) {
         }
     }
     return o;
-}
+};
 
 /*
  * @author wangxin
  * 获取一个mod文件父文件夹下的RJS文件
  * return arr ['dirPath','dirPath',...]
  */
-function getRJSFiles(files) {
+const getRJSFiles = (files = []) => {
     if (files.length == 0) return [];
 
-    var arr = [],
+    let arr = [],
         rjsDirectory = files[0].replace(/mod[\/\\].+$/g, ''),
         rjsFiles = fs.readdirSync(rjsDirectory);
 
-    rjsFiles.forEach(function (fileName) {
-        var file = rjsDirectory + fileName;
+    util.forEach(rjsFiles, function (fileName) {
+        let file = rjsDirectory + fileName;
         util.testRJS(file) && arr.push(file);
     });
 
     return arr;
-}
+};
 
 /*
  * @author wangxin
  * 获取一个文件下所有文件路径
  * return arr ['dirPath','dirPath',...]
  */
-function getLibraryMap(fileDir) {
-    var files = fs.readdirSync(fileDir), arr = arguments[1] || [];
-    files.forEach(function (fileName) {
-        var baseDir = fileDir + fileName, lstat = fs.lstatSync(baseDir);
+const getLibraryMap = (fileDir = '', arr = []) => {
+    let files = fs.readdirSync(fileDir);
+    util.forEach(files, function (fileName) {
+        let baseDir = fileDir + fileName, lstat = fs.lstatSync(baseDir);
         if (lstat.isDirectory()) {
             getLibraryMap(baseDir + PATH.sep, arr);
         } else {
-            var file = PATH.dirname(baseDir);
+            let file = PATH.dirname(baseDir);
             arr.indexOf(file) === -1 && arr.push(PATH.normalize(file));
         }
     });
     return arr;
-}
+};
 
 /*
  * @author wangxin
@@ -86,8 +83,8 @@ function getLibraryMap(fileDir) {
  * outputPath: 输出文件路径
  * return;
  */
-function doBrowserify(basePath, libraryMap, config, index, cb) {
-    var b = new browserify({
+const doBrowserify = (basePath = '', libraryMap, config, index, cb) => {
+    let b = new browserify({
         entries: basePath,
         paths: libraryMap,
         debug: config.rjs.debug || false
@@ -108,7 +105,7 @@ function doBrowserify(basePath, libraryMap, config, index, cb) {
             cb && cb(index + 1);
         }
     });
-}
+};
 
 /*
  * @author wangxin
@@ -117,9 +114,9 @@ function doBrowserify(basePath, libraryMap, config, index, cb) {
  * libraryMap: 库文件map对象
  * return false;
  */
-function walk(rjsMap, libraryMap, opt, cb) {
+const walk = (rjsMap = {}, libraryMap, opt, cb) => {
 
-    var arr = [], go = function (i) {
+    let arr = [], go = (i) => {
         if (arr[i]) {
             doBrowserify(arr[i], libraryMap, opt, i, go);
         } else {
@@ -128,17 +125,17 @@ function walk(rjsMap, libraryMap, opt, cb) {
         return false;
     };
 
-    for (var i in rjsMap) {
+    for (let i in rjsMap) {
         if (!i) {
             trace.error('file error');
             break;
         }
-        if (rjsMap.hasOwnProperty(i))  arr.push(rjsMap[i]);
+        if (rjsMap.hasOwnProperty(i)) arr.push(rjsMap[i]);
     }
 
     //开始编译
     return go(0);
-}
+};
 
 /*
  * @author wangxin
@@ -146,9 +143,9 @@ function walk(rjsMap, libraryMap, opt, cb) {
  * opts: 输出路径：文件路径
  * retrun；
  */
-function doMinify(map, opts, type) {
-    for (var i in map) {
-        var con = fs.readFileSync(map[i]), charset;
+const doMinify = (map, opts, type) => {
+    for (let i in map) {
+        let con = fs.readFileSync(map[i]), charset = '';
         //这里不建议用gbk编码格式
         if (iconv.decode(con, 'gbk').indexOf('�') != -1) {
             charset = 'utf8';
@@ -159,7 +156,7 @@ function doMinify(map, opts, type) {
         outputHandle(iconv.decode(con, charset), map[i], opts, type);
         con = null;
     }
-}
+};
 
 /*
  * @author wangxin
@@ -167,9 +164,9 @@ function doMinify(map, opts, type) {
  * opts: 输出路径：文件路径
  * retrun；
  */
-function imin(map, opts, cb) {
-    var arr = [];
-    for (var i in map) arr.push(map[i]);
+const imin = (map, opts, cb) => {
+    let arr = [];
+    for (let i in map) arr.push(map[i]);
 
     trace.load('image compressed, waiting...');
 
@@ -178,7 +175,7 @@ function imin(map, opts, cb) {
             cb && cb()
         });
     }();
-}
+};
 
 /*
  * @author wangxin
@@ -188,24 +185,24 @@ function imin(map, opts, cb) {
  */
 module.exports = function (config) {
 
-    var opts = util.extendDeep(config);
+    let opts = util.extendDeep(config);
 
-    var libraryMap = [];
+    let libraryMap = [];
 
     /**
      * 文件路径的初始化
      */
-    var fileMap = distrbute(opts),
+    let fileMap = distrbute(opts),
         rjsMap = fileMap.rjs,
         cssMap = fileMap.css,
         jsMap = fileMap.js,
         imageMap = fileMap.image,
         scssMap = fileMap.scss,
-        watchTask = function () {
+        watchTask = () => {
 
-            var cache = [], running = false;
+            let cache = [], running = false;
 
-            listener(opts, function (file, extname, type) {
+            listener(opts, (file, extname, type) => {
 
                 function go(file, extname, type) {
 
@@ -339,7 +336,7 @@ module.exports = function (config) {
             if (opts.rjs && opts.rjs.libraryPath) {
                 libraryMap = getLibraryMap(PATH.resolve(opts.rjs.libraryPath) + PATH.sep, [PATH.resolve(opts.inputPath) + PATH.sep]);
             }
-            walk(rjsMap, libraryMap, opts, function () {
+            walk(rjsMap, libraryMap, opts, () => {
                 trace.ok('RJS file processing tasks completed\n');
                 task_run();
             });
