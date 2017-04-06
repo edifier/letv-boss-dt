@@ -15,7 +15,7 @@
     "colors": "1.1.2",
     "iconv-lite": "0.4.13",
     "imagemin": "3.2.2",
-    "uglify-js": "2.4.24",
+    "uglify-js": "2.8.21",
     "cross-spawn": "5.0.1",
     "ssh2": "0.5.4",
     "watch": "0.16.0",

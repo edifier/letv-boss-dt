@@ -3,18 +3,25 @@
  */
 
 'use strict';
-const fs = require('fs');
-const PATH = require('path');
-const iconv = require('iconv-lite');
+const {readdirSync, lstatSync, readFileSync} = require('fs');
+const {resolve, dirname, sep, normalize} = require('path');
+const {decode} = require('iconv-lite');
 
 const browserify = require('browserify');
 const Imagemin = require('imagemin');
 
 const distrbute = require('./lib/distrbute');
-const trace = require('./lib/trace');
+const {error, ok, warn, log, load}  = require('./lib/trace');
 const outputHandle = require('./lib/output');
 const listener = require('./lib/listener');
-const util = require('./lib/util');
+const {
+    getLength,
+    log:util_log,
+    removeEle,
+    extendDeep,
+    forEach,
+    testRJS
+} = require('./lib/util');
 
 /*
  * @author wangxin
@@ -22,17 +29,12 @@ const util = require('./lib/util');
  * file: 文件路径
  * return object;
  */
-const getArgs = (file = [], o = {}, type = '') => {
-    let i = 0, len = file.length;
-
-    if (len == 0) return o;
-    for (; i < len; i++) {
-        var path = PATH.resolve(file[i]);
-        if (!type || type == 'built' || type == 'change') {
-            !o[path] && (o[path] = file[i]);
-        } else if (type === 'removed') {
-            delete o[path];
-        }
+const getArgs = (file = '', o = {}, type = '') => {
+    let path = resolve(file);
+    if (!type || type == 'built' || type == 'change') {
+        !o[path] && (o[path] = file);
+    } else if (type === 'removed') {
+        delete o[path];
     }
     return o;
 };
@@ -47,11 +49,11 @@ const getRJSFiles = (files = []) => {
 
     let arr = [],
         rjsDirectory = files[0].replace(/mod[\/\\].+$/g, ''),
-        rjsFiles = fs.readdirSync(rjsDirectory);
+        rjsFiles = readdirSync(rjsDirectory);
 
-    util.forEach(rjsFiles, function (fileName) {
+    forEach(rjsFiles, function (fileName) {
         let file = rjsDirectory + fileName;
-        util.testRJS(file) && arr.push(file);
+        testRJS(file) && arr.push(file);
     });
 
     return arr;
@@ -63,14 +65,14 @@ const getRJSFiles = (files = []) => {
  * return arr ['dirPath','dirPath',...]
  */
 const getLibraryMap = (fileDir = '', arr = []) => {
-    let files = fs.readdirSync(fileDir);
-    util.forEach(files, function (fileName) {
-        let baseDir = fileDir + fileName, lstat = fs.lstatSync(baseDir);
+    let files = readdirSync(fileDir);
+    forEach(files, function (fileName) {
+        let baseDir = fileDir + fileName, lstat = lstatSync(baseDir);
         if (lstat.isDirectory()) {
-            getLibraryMap(baseDir + PATH.sep, arr);
+            getLibraryMap(baseDir + sep, arr);
         } else {
-            let file = PATH.dirname(baseDir);
-            arr.indexOf(file) === -1 && arr.push(PATH.normalize(file));
+            let file = dirname(baseDir);
+            arr.indexOf(file) === -1 && arr.push(normalize(file));
         }
     });
     return arr;
@@ -97,11 +99,10 @@ const doBrowserify = (basePath, libraryMap, config, index, cb) => {
                 module.timer = null;
                 cb && cb(index + 1);
             }, 50);
-            trace.error(String(err));
+            error(String(err));
         } else {
             //browserify编译完成，开始输出
-            outputHandle(iconv.decode(code, 'utf8'), basePath, config, 'rjs');
-            code = null;
+            outputHandle(decode(code, 'utf8'), basePath, config, 'rjs');
             cb && cb(index + 1);
         }
     });
@@ -127,7 +128,7 @@ const walk = (rjsMap, libraryMap, opt, cb) => {
 
     for (let i in rjsMap) {
         if (!i) {
-            trace.error('file error');
+            error('file error');
             break;
         }
         if (rjsMap.hasOwnProperty(i)) arr.push(rjsMap[i]);
@@ -145,15 +146,15 @@ const walk = (rjsMap, libraryMap, opt, cb) => {
  */
 const doMinify = (map, opts, type) => {
     for (let i in map) {
-        let con = fs.readFileSync(map[i]), charset = '';
+        let con = readFileSync(map[i]), charset = '';
         //这里不建议用gbk编码格式
-        if (iconv.decode(con, 'gbk').indexOf('�') != -1) {
+        if (decode(con, 'gbk').indexOf('�') != -1) {
             charset = 'utf8';
         } else {
             charset = 'gbk';
         }
 
-        outputHandle(iconv.decode(con, charset), map[i], opts, type);
+        outputHandle(decode(con, charset), map[i], opts, type);
         con = null;
     }
 };
@@ -168,12 +169,16 @@ const imin = (map, opts, cb) => {
     let arr = [];
     for (let i in map) arr.push(map[i]);
 
-    trace.load('image compressed, waiting...');
+    load('image compressed, waiting...');
 
     ~function () {
-        new Imagemin().src(arr).dest(PATH.normalize(opts.image.output.path)).run(function () {
-            cb && cb()
-        });
+        if (opts.image && opts.image.output && opts.image.output.path) {
+            new Imagemin().src(arr).dest(normalize(opts.image.output.path)).run(function () {
+                cb && cb()
+            });
+        } else {
+            error('Image output object requires a path attribute');
+        }
     }();
 };
 
@@ -185,165 +190,165 @@ const imin = (map, opts, cb) => {
  */
 module.exports = function (config) {
 
-    let opts = util.extendDeep(config);
+    let opts = extendDeep(config);
 
     let libraryMap = [];
 
     /**
      * 文件路径的初始化
      */
-    let fileMap = distrbute(opts),
-        rjsMap = fileMap.rjs,
-        cssMap = fileMap.css,
-        jsMap = fileMap.js,
-        imageMap = fileMap.image,
-        scssMap = fileMap.scss,
-        watchTask = () => {
+    let fileMap = distrbute(opts), {
+        rjs:rjsMap,
+        css:cssMap,
+        js:jsMap,
+        image:imageMap,
+        scss:scssMap
+    } = fileMap;
 
-            let cache = [], running = false;
+    const watchTask = () => {
 
-            listener(opts, (file, extname, type) => {
+        let cache = [], running = false;
 
-                function go(file, extname, type) {
+        listener(opts, (args = []) => {
 
-                    function next() {
-                        if (cache.length != 0) {
-                            go.apply(this, cache.shift());
+            const go = (file, extname, type) => {
+
+                function next() {
+                    if (cache.length != 0) {
+                        go.apply(this, cache.shift());
+                    } else {
+                        running = false;
+                    }
+                }
+
+                switch (extname) {
+                    case 'rjs':
+                        if (type == 'change' || type == 'built') {
+                            util_log(file, type);
+                            walk(getArgs(file, {}, type), libraryMap, opts, function () {
+                                next();
+                            });
+                        } else if (!type) {
+                            log('mod file: ' + file + ' has been changed at ' + new Date());
+                            walk(getArgs(getRJSFiles(file), {}, type), libraryMap, opts, function () {
+                                next();
+                            });
+                        } else if (type == 'libFile') {
+                            walk(rjsMap, libraryMap, opts);
+                            next();
+                        } else if (type == 'removed') {
+                            util_log(file, type);
+                            rjsMap = getArgs(file, rjsMap, type);
+                            next();
                         } else {
-                            running = false;
+                            file = normalize(resolve(file));
+                            if (type === 'resetLibA') {
+                                libraryMap.indexOf(file) === -1 && libraryMap.push(file);
+                            }
+                            else if (type === 'resetLibD') {
+                                libraryMap = removeEle.call(libraryMap, file);
+                            }
                         }
-                    }
-
-                    switch (extname) {
-                        case 'rjs':
-                            if (type == 'change' || type == 'built') {
-                                walk(getArgs(file, {}, type), libraryMap, opts, function () {
-                                    if (type == 'built') {
-                                        util.log(file, type);
-                                    } else {
-                                        trace.log(file[0] + ' has been changed at ' + new Date());
-                                    }
-                                    next();
-                                });
-                            } else if (!type) {
-                                walk(getArgs(getRJSFiles(file), {}, type), libraryMap, opts, function () {
-                                    trace.log('mod file: ' + file + ' has been changed at ' + new Date());
-                                });
-                                next();
-                            } else if (type == 'libFile') {
-                                walk(rjsMap, libraryMap, opts);
-                                next();
-                            } else if (type == 'removed') {
-                                rjsMap = getArgs(file, rjsMap, type);
-                                util.log(file, type);
-                                next();
-                            } else {
-                                file = PATH.normalize(PATH.resolve(file));
-                                if (type === 'resetLibA') {
-                                    libraryMap.indexOf(file) === -1 && libraryMap.push(file);
-                                }
-                                else if (type === 'resetLibD') {
-                                    libraryMap = util.removeEle.call(libraryMap, file);
-                                }
-                            }
-                            break;
-                        case 'css':
-                            if (type == 'change') {
-                                doMinify(getArgs(file, cssMap, type), opts, 'css');
-                                trace.log(file[0] + ' has been changed at ' + new Date());
-                            } else if (type == 'removed' || type == 'built') {
-                                cssMap = getArgs(file, cssMap, type);
-                                util.log(file, type);
-                            }
-                            next();
-                            break;
-                        case 'js':
-                            if (type == 'change') {
-                                doMinify(getArgs(file, {}, type), opts, 'js');
-                                trace.log(file[0] + ' has been changed at ' + new Date());
-                            } else if (type == 'removed' || type == 'built') {
-                                jsMap = getArgs(file, jsMap, type);
-                                util.log(file, type);
-                            }
-                            next();
-                            break;
-                        case 'scss':
-                            if (type == 'change') {
-                                doMinify(getArgs(file, scssMap, type), opts, 'scss');
-                                trace.log(file[0] + ' has been changed at ' + new Date());
-                            } else if (type == 'remove' || type == 'built') {
-                                scssMap = getArgs(file, scssMap, type);
-                                util.log(file, type);
-                            }
-                            next();
-                            break;
-                        case '' :
-                            break;
-                        default :
-                            if (opts.image.patterns.indexOf('.' + extname) != -1) {
-                                imin(getArgs(file), opts);
-                                trace.log(file[0] + ' has been changed at ' + new Date());
-                            }
-                            next();
-                    }
+                        break;
+                    case 'css':
+                        if (type == 'change') {
+                            doMinify(getArgs(file, cssMap, type), opts, 'css');
+                            util_log(file, type);
+                        } else if (type == 'removed' || type == 'built') {
+                            cssMap = getArgs(file, cssMap, type);
+                            util_log(file, type);
+                        }
+                        next();
+                        break;
+                    case 'js':
+                        if (type == 'change') {
+                            doMinify(getArgs(file, {}, type), opts, 'js');
+                            util_log(file, type);
+                        } else if (type == 'removed' || type == 'built') {
+                            jsMap = getArgs(file, jsMap, type);
+                            util_log(file, type);
+                        }
+                        next();
+                        break;
+                    case 'scss':
+                        if (type == 'change') {
+                            doMinify(getArgs(file, scssMap, type), opts, 'scss');
+                            util_log(file, type);
+                        } else if (type == 'remove' || type == 'built') {
+                            scssMap = getArgs(file, scssMap, type);
+                            util_log(file, type);
+                        }
+                        next();
+                        break;
+                    default :
+                        // log('>>> Debugging information, you can ignore: ' + extname + '\n');
+                        if (opts.image && opts.image.patternss && opts.image.patterns.indexOf('.' + extname) != -1) {
+                            imin(getArgs(file), opts);
+                            util_log(file, type);
+                        }
+                        next();
                 }
+            };
 
-                if (!running) {
-                    running = true;
-                    go(file, extname, type);
-                } else {
-                    cache.push(arguments);
-                }
-            });
-        },
-        task_run = function () {
-            //对CSS文件的处理
-            if (cssMap) {
-                doMinify(cssMap, opts, 'css');
-                trace.ok('CSS file processing tasks completed\n');
-            }
+            cache = cache.concat(args);
 
-            if (scssMap) {
-                doMinify(scssMap, opts, 'scss');
-                trace.ok('scss file processing tasks completed\n');
-            }
-
-            if (jsMap) {
-                doMinify(jsMap, opts, 'js');
-                trace.ok('JS file processing tasks completed\n');
-            }
-
-            if (imageMap) {
-                imin(imageMap, opts, function () {
-                    trace.ok('image compress tasks completed\n');
-                    //watch任务处理
-                    opts.watch && watchTask();
-                });
+            if (!running) {
+                running = true;
+                go.apply(this, cache.shift());
             } else {
-                opts.watch && watchTask();
+                cache.push(args);
             }
-        };
+        });
+    };
 
-    trace.load('\ntask run, go...\n');
+    const task_run = function () {
+        //对CSS文件的处理
+        if (cssMap) {
+            doMinify(cssMap, opts, 'css');
+            ok('CSS file processing tasks completed\n');
+        }
+
+        if (scssMap) {
+            doMinify(scssMap, opts, 'scss');
+            ok('scss file processing tasks completed\n');
+        }
+
+        if (jsMap) {
+            doMinify(jsMap, opts, 'js');
+            ok('JS file processing tasks completed\n');
+        }
+
+        if (imageMap) {
+            imin(imageMap, opts, function () {
+                ok('image compress tasks completed\n');
+                //watch任务处理
+                opts.watch && watchTask();
+            });
+        } else {
+            opts.watch && watchTask();
+        }
+    };
+
+    load('\ntask run, go...\n');
 
     /*
      * 因为rjs任务为异步操作
      * 所以放在最先执行的位置上
      */
-    if (util.getLength(fileMap) !== 0) {
-        if (util.getLength(rjsMap) !== 0) {
+    if (getLength(fileMap) !== 0) {
+        if (getLength(rjsMap) !== 0) {
             //获取库文件的映射列表
             if (opts.rjs && opts.rjs.libraryPath) {
-                libraryMap = getLibraryMap(PATH.resolve(opts.rjs.libraryPath) + PATH.sep, [PATH.resolve(opts.inputPath) + PATH.sep]);
+                libraryMap = getLibraryMap(resolve(opts.rjs.libraryPath) + sep, [resolve(opts.inputPath) + sep]);
             }
             walk(rjsMap, libraryMap, opts, () => {
-                trace.ok('RJS file processing tasks completed\n');
+                ok('RJS file processing tasks completed\n');
                 task_run();
             });
         } else {
             task_run();
         }
     } else {
-        trace.warn('no file to be processed , process end');
+        warn('no file to be processed , process end');
     }
 };
