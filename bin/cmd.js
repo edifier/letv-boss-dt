@@ -3,7 +3,7 @@
 'use strict';
 const {readdirSync, lstatSync} = require('fs');
 const {basename, sep, dirname} = require('path');
-const browserifyPlus = require('../index.js');
+const taskRun = require('../index.js');
 const {error, log, warn} = require('../lib/trace.js');
 const {forEach, relative, extendDeep} = require('../lib/util.js');
 
@@ -55,10 +55,10 @@ const fileMap = args ? {path: relative(process.cwd(), args)} : getFilePath(proce
 
 if (fileMap && fileMap.path) {
     try {
-        browserifyPlus(extendDeep(require(fileMap.path), {}, dirname(fileMap.path)));
+        taskRun(extendDeep(require(fileMap.path), {}, dirname(fileMap.path)));
     } catch (e) {
-        console.log(e);
-        error('configuration file parsing error');
+        error(String(e));
+        error('\nconfiguration file parsing error');
         process.exit(1);
     }
 } else {
