@@ -1,6 +1,6 @@
 {
   "name": "letv-boss-dt",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "letv boss team development tools",
   "main": "index.js",
   "bin": {
