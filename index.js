@@ -39,22 +39,6 @@ let depency_tree = {
 
 /*
  * @author wangxin
- * 获取执行任务的参数
- * file: 文件路径
- * return object;
- */
-const getArgs = (file = '', o = {}, type = '') => {
-    let path = resolve(file);
-    if (!type || type == 'built' || type == 'change') {
-        !o[path] && (o[path] = file);
-    } else if (type === 'removed') {
-        delete o[path];
-    }
-    return o;
-};
-
-/*
- * @author wangxin
  * 获取一个文件下所有文件路径
  * return arr ['dirPath','dirPath',...]
  */
@@ -176,8 +160,9 @@ const walk = (rjsMap, libraryMap, opt, cb) => {
  * retrun；
  */
 const doMinify = (map, opts, type) => {
-    for (let i in map) {
-        let con = readFileSync(map[i]), charset = '';
+
+    const go = (file) => {
+        let con = readFileSync(file), charset = '';
         //这里不建议用gbk编码格式
         if (decode(con, 'gbk').indexOf('�') != -1) {
             charset = 'utf8';
@@ -185,7 +170,15 @@ const doMinify = (map, opts, type) => {
             charset = 'gbk';
         }
 
-        outputHandle(decode(con, charset), map[i], opts, type);
+        outputHandle(decode(con, charset), file, opts, type);
+    };
+
+    if (typeof map === 'string') {
+        go(map);
+    } else if (map instanceof Object) {
+        for (let i in map) {
+            go(map[i]);
+        }
     }
 };
 
@@ -197,7 +190,12 @@ const doMinify = (map, opts, type) => {
  */
 const imin = (map, opts, cb) => {
     let arr = [];
-    for (let i in map) arr.push(map[i]);
+
+    if (typeof map === 'string') {
+        arr.push(map);
+    } else {
+        for (let i in map) arr.push(map[i]);
+    }
 
     load('image compressed, waiting...');
 
@@ -283,7 +281,7 @@ module.exports = function (config) {
                                 }
                             } else if (type === 'removed') {
                                 util_log(file, type);
-                                forEach(mod[file].job, (item) => {
+                                lib[file] && lib[file].job && forEach(mod[file].job, (item) => {
                                     job[item].deps = removeEle(job[item].deps, file);
                                 });
                                 delete mod[file];
@@ -304,55 +302,54 @@ module.exports = function (config) {
                                 }
                             } else if (type === 'removed') {
                                 util_log(file, type);
-                                forEach(lib[file].job, (item) => {
+                                lib[file] && lib[file].job && forEach(lib[file].job, (item) => {
                                     job[item].deps = removeEle(job[item].deps, file);
                                 });
                                 delete lib[file];
-                                libraryMap = removeEle(libraryMap, file);
-                                console.log(libraryMap);
                                 next();
                             } else if (type === 'built') {
                                 util_log(file, type);
                                 lib[file] = {name: file, job: []};
                                 file = normalize(resolve(file));
-                                libraryMap.indexOf(file) === -1 && libraryMap.push(file);
-                                console.log(libraryMap);
                                 next();
                             }
                         } else {
-                            if (type == 'change') {
-                                doMinify(getArgs(file, {}, type), opts, 'js');
-                                util_log(file, type);
-                            } else if (type == 'removed' || type == 'built') {
-                                jsMap = getArgs(file, jsMap, type);
-                                util_log(file, type);
+                            util_log(file, type);
+                            if (type === 'change') {
+                                doMinify(file, opts, 'js');
+                            } else if (type === 'built') {
+                                jsMap[file] = file;
+                            } else if (type === 'removed') {
+                                delete jsMap[file];
                             }
                             next();
                         }
                         break;
                     case 'css':
-                        if (type == 'change') {
-                            doMinify(getArgs(file, cssMap, type), opts, 'css');
-                            util_log(file, type);
-                        } else if (type == 'removed' || type == 'built') {
-                            cssMap = getArgs(file, cssMap, type);
-                            util_log(file, type);
+                        util_log(file, type);
+                        if (type === 'change') {
+                            doMinify(cssMap, opts, 'css');
+                        } else if (type === 'built') {
+                            cssMap[file] = file;
+                        } else if (type === 'removed') {
+                            delete cssMap[file];
                         }
                         next();
                         break;
                     case 'scss':
-                        if (type == 'change') {
-                            doMinify(getArgs(file, scssMap, type), opts, 'scss');
-                            util_log(file, type);
-                        } else if (type == 'remove' || type == 'built') {
-                            scssMap = getArgs(file, scssMap, type);
-                            util_log(file, type);
+                        util_log(file, type);
+                        if (type === 'change') {
+                            doMinify(scssMap, opts, 'scss');
+                        } else if (type === 'built') {
+                            scssMap[file] = file;
+                        } else if (type === 'remove') {
+                            delete scssMap[file];
                         }
                         next();
                         break;
                     default :
                         if (opts.image && opts.image.patternss && opts.image.patterns.indexOf('.' + extname) != -1) {
-                            imin(getArgs(file), opts);
+                            imin(file, opts);
                             util_log(file, type);
                         }
                         next();
@@ -375,6 +372,11 @@ module.exports = function (config) {
     };
 
     const task_run = function () {
+        if (jsMap) {
+            doMinify(jsMap, opts, 'js');
+            ok('JS file processing tasks completed\n');
+        }
+
         if (cssMap) {
             doMinify(cssMap, opts, 'css');
             ok('CSS file processing tasks completed\n');
@@ -383,11 +385,6 @@ module.exports = function (config) {
         if (scssMap) {
             doMinify(scssMap, opts, 'scss');
             ok('scss file processing tasks completed\n');
-        }
-
-        if (jsMap) {
-            doMinify(jsMap, opts, 'js');
-            ok('JS file processing tasks completed\n');
         }
 
         if (imageMap) {
