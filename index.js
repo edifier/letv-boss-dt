@@ -262,7 +262,7 @@ module.exports = function (config) {
                                 walk(file, libraryMap, opts, next);
                                 next();
                             } else if (type === 'removed') {
-                                forEach(job[file].deps, (item) => {
+                                job[file] && job[file].deps && forEach(job[file].deps, (item) => {
                                     if (mod[item]) mod[item].job = removeEle(mod[item].job, file);
                                     if (lib[item]) lib[item].job = removeEle(lib[item].job, file);
                                 });
