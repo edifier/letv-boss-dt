@@ -7,7 +7,7 @@
 	
 	查找指定目录下得所有使用commonJS规范编写的js文件(*/rjs/*.js || */*_rjs.js)
 	
-	进行browserify编译(支持短命名方式引用模块)，并同步文件修改(删除文件、增加文件、修改文件)
+	进行文件的合并和压缩(支持短命名方式引用模块)，并同步文件修改(删除文件、增加文件、修改文件)
 
 	在*/letv-boss-dt/执行:npm test，*/letv-boss-dt/js/文件内查看编译后的代码
 	
@@ -20,6 +20,7 @@
 ## Options
 
 	* `inputPath` -- 需要进行编译的文件夹名称
+	* `tipMsg` -- 是否需要详细的提示信息
 	* `output.banner` -- 输出文件banner ==> <%time%>:更新时间
 	* `output.path` -- 输出文件的路径
 	* `output.type` -- 输出方式
@@ -34,12 +35,13 @@
 	
 	方法调用：
 ~~~ javascript
-	
+
 	//调用方法 from: ./test/test.js
     var bsp = require('letv-boss-dt'); 
     var config = {
         //需要编译的文件夹
 		inputPath: './test/src',
+		tipMsg: true,
 		js: {
 			output: {
 				//输出banner
@@ -97,12 +99,10 @@
 
 	业务代码：
 ~~~ javascript
-	
+
 	//引用模块 from: ./test/src/rjs/test.js
 	//库文件方法的引用
     var clear = require('clear.js');
-    //node模块的引用
-    var PATH = require('path');
     //工程文件的引用
     var t2 = require('./t2');
 
@@ -112,7 +112,7 @@
 	
 ~~~
 ~~~ css
-	
+
 	/*from: ./test/src/css/t.css*/
 	/*css文件支持@import引用*/
 	@import url('./test_2.css');
