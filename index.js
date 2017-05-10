@@ -255,12 +255,15 @@ module.exports = function (config) {
                     case 'js':
                         if (opts.rjs && (job[file] || testRJS(file))) {
                             if (type === 'change') {
-                                util_log(file, type);
-                                walk(file, libraryMap, opts, next);
+                                walk(file, libraryMap, opts, () => {
+                                    util_log(file, type);
+                                    next();
+                                });
                             } else if (type === 'built') {
-                                util_log(file, type);
-                                walk(file, libraryMap, opts, next);
-                                next();
+                                walk(file, libraryMap, opts, () => {
+                                    util_log(file, type);
+                                    next();
+                                });
                             } else if (type === 'removed') {
                                 job[file] && job[file].deps && forEach(job[file].deps, (item) => {
                                     if (mod[item]) mod[item].job = removeEle(mod[item].job, file);
@@ -273,8 +276,10 @@ module.exports = function (config) {
                         } else if (opts.rjs && (mod[file] || testModJS(file))) {
                             if (type === 'change') {
                                 if (mod[file] && mod[file].job && mod[file].job.length != 0) {
-                                    util_log(mod[file].job, type);
-                                    walk(mod[file].job, libraryMap, opts, next);
+                                    walk(mod[file].job, libraryMap, opts, () => {
+                                        util_log(mod[file].job, type);
+                                        next();
+                                    });
                                 } else {
                                     util_log(file, type);
                                     next();
@@ -294,8 +299,10 @@ module.exports = function (config) {
                         } else if (opts.rjs && (lib[file] || isInDirectory(file, opts.rjs.libraryPath))) {
                             if (type === 'change') {
                                 if (lib[file] && lib[file].job && lib[file].job.length != 0) {
-                                    util_log(lib[file].job, type);
-                                    walk(lib[file].job, libraryMap, opts, next);
+                                    walk(lib[file].job, libraryMap, opts, () => {
+                                        util_log(lib[file].job, type);
+                                        next();
+                                    });
                                 } else {
                                     util_log(file, type);
                                     next();
@@ -356,7 +363,7 @@ module.exports = function (config) {
                 }
             };
 
-            cache = cache.concat(args);
+            cache.push(args);
 
             if (!running) {
                 running = true;
